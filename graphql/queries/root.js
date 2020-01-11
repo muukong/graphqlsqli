@@ -17,42 +17,14 @@ const QueryRootType = new GraphQLObjectType({
                 id: { type: GraphQLInt },
             },
             resolve: async (source,params) => {
-                return dbconn.promise().query(`SELECT * FROM users WHERE userid='${params.id}'`)
-                .then( ([rows,fields] ) => {
-                    
-                    console.log('----------');
-                    console.log(rows[0].name);
-                    console.log('----------');
+                
+                const [rows,fields] = await dbconn.promise().query(`SELECT * FROM users WHERE userid='${params.id}'`);
+                return { 
+                    'id': rows[0].userid,
+                    'name': rows[0].name,
+                    'email': rows[0].name,
+                };
 
-                    return { 
-                        'id': rows[0].userid,
-                        'name': rows[0].name,
-                        'email': rows[0].name,
-                    };
-                })
-                .catch(console.log);
-            }
-        },
-
-        users: {
-            type: GraphQLList(UserType),
-            description: 'Returns list of all users',
-            resolve: async (source,params) => {
-                return dbconn.promise().query('SELECT * from users')
-                .then( ([rows,fields]) => {
-
-                    var users = [];
-                    rows.forEach(row => {
-                        users.push({ 
-                            'id': row.userid,
-                            'name': row.name,
-                            'email': row.name,
-                        });
-                    }); 
-
-                    return users;
-                })
-                .catch(console.log);
             }
         },
 
@@ -64,60 +36,48 @@ const QueryRootType = new GraphQLObjectType({
             },
             resolve: async (source,params) => {
 
-                const sql = `SELECT * FROM posts WHERE postid='${params.postid}'`;
+                const post_query = `SELECT * FROM posts WHERE postid='${params.postid}'`;
+                const [post_rows,post_fields] = await dbconn.promise().query(post_query);
 
-                return dbconn.promise().query(sql)
-                .then( ([rows,fields]) => {
+                const user_query = `SELECT * from users WHERE userid=${post_rows[0].userid}`;
+                const [user_rows,user_fields] = await dbconn.promise().query(user_query);
 
-                    return dbconn.promise().query(`SELECT * from users WHERE userid=${rows[0].userid}`)
-                    .then( ([rows2,fields2]) => {
-                         return {
-                            'id': rows[0].postid,
-                            'title': rows[0].title,
-                            'body': rows[0].body,
-                            'author': {
-                                'id': rows2[0].userid,
-                                'name': rows2[0].name,
-                                'email': rows2[0].email
-                            }
-                        }
-                    })
-                    .catch(console.log);
-
-                    /*
-                    console.log('-------');
-                    console.log(rows);
-                    console.log('-------');
-                    return {
-                        'id': rows[0].postid,
-                        'title': rows[0].title,
-                        'body': rows[0].body,
-                        'author': {
-                            'id': 1,
-                            'name': 'foo',
-                            'email': 'bar'
-                        }
+                 return {
+                    'id': post_rows[0].postid,
+                    'title': post_rows[0].title,
+                    'body': post_rows[0].body,
+                    'author': {
+                        'id': user_rows[0].userid,
+                        'name': user_rows[0].name,
+                        'email': user_rows[0].email
                     }
-                    console.log(rows); 
-                    */
-                })
-                .catch(console.log);
+                }
             }
         },
 
         posts: {
-            type: PostType,
+            type: GraphQLList(PostType),
             description: 'Returns list of posts',
-            args: {
-                title: { type: GraphQLString}
-            },
-            resolve: async (source,{title}) => {
+            resolve: async (source,params) => {
 
-                dbconn.query(`SELECT * FROM customers2 WHERE name='${title}'`, function(err, res, fields) {
-                    if ( err ) throw err;
-                    console.log(res);
+                const query = 'SELECT * FROM posts';
+                const [rows,fields] = await dbconn.promise().query(query);
+
+                var posts = [];
+                rows.forEach(row => {
+                    posts.push({
+                        'id': row.postid,
+                        'title': row.title,
+                        'body': rows.body,
+                        'author': {
+                            'id': 1,
+                            'name': 'hello',
+                            'email': 'foo'
+                        }
+                    });
                 });
-                return null;
+
+                return posts;
             }
         }
     })

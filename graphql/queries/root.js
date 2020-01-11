@@ -100,7 +100,7 @@ const QueryRootType = new GraphQLObjectType({
             type: UserType,
             description: 'List all users.',
             args: {
-                id: { type: GraphQLInt },
+                id: { type: GraphQLString },
             },
             resolve: async (source,params) => { return user_by_id(params.id); }
         },

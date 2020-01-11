@@ -6,7 +6,6 @@ const PostType = require('./PostType');
 var dbconn = require('../../mysql');
 
 async function posts_by_user(userid) {
-    //console.log('[-] user_by_id');
 
     const post_query = `SELECT * FROM posts WHERE userid=${userid}`;
     const [post_rows,post_fields] = await dbconn.promise().query(post_query);
@@ -27,19 +26,13 @@ async function posts_by_user(userid) {
 }
 
 async function user_by_id(userid) {
-    //console.log('[-] user_by_id');
 
     const [rows,fields] = await dbconn.promise().query(`SELECT * FROM users WHERE userid='${userid}'`);
-
-    /*
-    const post_query = `SELECT * FROM posts WHERE userid=${rows[0].userid}`;
-    const [post_rows,post_fields] = await dbconn.promise().query(post_query);
-    */
 
     var user = {
         'id': rows[0].userid,
         'name': rows[0].name,
-        'email': rows[0].name,
+        'email': rows[0].email,
         'posts': async function thunk() {
             return posts_by_user(rows[0].userid);
         }
@@ -47,10 +40,61 @@ async function user_by_id(userid) {
     return user;
 }
 
+async function all_users() {
+
+    const [rows,fields] = await dbconn.promise().query('SELECT * from users');
+
+    var users = [];
+    rows.forEach(row => {
+        users.push({
+            'id': row.userid,
+            'name': row.name,
+            'email': row.email,
+            'posts': async function thunk() {
+                return posts_by_user(row.userid); 
+            }
+        }); 
+    });
+
+    return users;
+}
+
+async function post_by_id(postid) {
+
+    const post_query = `SELECT * FROM posts WHERE postid='${postid}'`;
+    const [post_rows,post_fields] = await dbconn.promise().query(post_query);
+
+    return {
+        'id': post_rows[0].postid,
+        'title': post_rows[0].title,
+        'body': post_rows[0].body,
+        'user': function thunk() {
+            return user_by_id(post_rows[0].userid);
+         }
+    }
+}
+
+async function all_posts() {
+
+    const [rows,fields] = await dbconn.promise().query('SELECT * from posts');
+    var posts = [];
+    rows.forEach(row => {
+        posts.push({
+            'id': row.postid,
+            'title': row.title,
+            'body': row.body,
+            'user': async function thunk() {
+                return user_by_id(row.userid);
+            }
+        }); 
+    });
+    
+    return posts;
+}
+
 const QueryRootType = new GraphQLObjectType({
     name: 'AppSchema',
-    description: 'GraphQL Test Query.',
-    fields: () => ({
+    description: 'GraphQL Test Query.', fields: () => ({
 
         user: {
             type: UserType,
@@ -58,24 +102,13 @@ const QueryRootType = new GraphQLObjectType({
             args: {
                 id: { type: GraphQLInt },
             },
-            resolve: async (source,params) => {
+            resolve: async (source,params) => { return user_by_id(params.id); }
+        },
 
-                const [rows,fields] = await dbconn.promise().query(`SELECT * FROM users WHERE userid='${params.id}'`);
-
-                const post_query = `SELECT * FROM posts WHERE userid=${rows[0].userid}`;
-                const [post_rows,post_fields] = await dbconn.promise().query(post_query);
-
-                var user = {
-                    'id': rows[0].userid,
-                    'name': rows[0].name,
-                    'email': rows[0].name,
-                    'posts': async function thunk() {
-                                return posts_by_user(rows[0].userid);
-                             }
-                };
-
-                return user;
-            }
+        users: {
+            type: GraphQLList(UserType),
+            description: 'Returns all users',
+            resolve: async (source,params) => { return all_users(); }
         },
 
         post: {
@@ -84,53 +117,13 @@ const QueryRootType = new GraphQLObjectType({
             args: {
                 postid: { type: GraphQLInt }
             },
-            resolve: async (source,params) => {
-                const post_query = `SELECT * FROM posts WHERE postid='${params.postid}'`;
-                const [post_rows,post_fields] = await dbconn.promise().query(post_query);
-
-                const user_query = `SELECT * from users WHERE userid=${post_rows[0].userid}`;
-                const [user_rows,user_fields] = await dbconn.promise().query(user_query);
-
-                 return {
-                    'id': post_rows[0].postid,
-                    'title': post_rows[0].title,
-                    'body': post_rows[0].body,
-                    'user': {
-                        'id': user_rows[0].userid,
-                        'name': user_rows[0].name,
-                        'email': user_rows[0].email
-                    }
-                }
-            }
+            resolve: async (source,params) => { return post_by_id(params.postid); }
         },
 
         posts: {
             type: GraphQLList(PostType),
             description: 'Returns list of posts',
-            resolve: async (source,params) => {
-
-                console.log('---- source ----');
-                console.log(source);
-                console.log('---- source ----');
-
-                const query = 'SELECT * FROM posts';
-                const [rows,fields] = await dbconn.promise().query(query);
-
-
-                var posts = [];
-                rows.forEach(row => {
-                    posts.push({
-                        'id': row.postid,
-                        'title': row.title,
-                        'body': rows.body,
-                        'user': function thunk() {
-                            return 'hello'; //user_by_id(1);  // FIXME
-                        }
-                    });
-                });
-
-                return posts;
-            }
+            resolve: async (source,params) => { return all_posts(); }
         }
     })
 });

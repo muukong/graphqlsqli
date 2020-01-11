@@ -6,7 +6,6 @@ const UserType = new GraphQLObjectType({
     fields: () => ({
         name: { type: GraphQLString },
         email: { type: GraphQLString },
-        password: { type: GraphQLString },
         posts: { type: new GraphQLList(require('./PostType')) }
     })
 });

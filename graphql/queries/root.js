@@ -5,6 +5,48 @@ const PostType = require('./PostType');
 
 var dbconn = require('../../mysql');
 
+async function posts_by_user(userid) {
+    //console.log('[-] user_by_id');
+
+    const post_query = `SELECT * FROM posts WHERE userid=${userid}`;
+    const [post_rows,post_fields] = await dbconn.promise().query(post_query);
+
+    posts = [];
+    post_rows.forEach(row => {
+        posts.push({
+            'id': row.postid,
+            'title': row.title,
+            'body': row.body,
+            'author': async function thunk() {
+                return user_by_id(row.userid);
+            }
+        });
+    });
+
+    return posts;
+}
+
+async function user_by_id(userid) {
+    //console.log('[-] user_by_id');
+
+    const [rows,fields] = await dbconn.promise().query(`SELECT * FROM users WHERE userid='${userid}'`);
+
+    /*
+    const post_query = `SELECT * FROM posts WHERE userid=${rows[0].userid}`;
+    const [post_rows,post_fields] = await dbconn.promise().query(post_query);
+    */
+
+    var user = {
+        'id': rows[0].userid,
+        'name': rows[0].name,
+        'email': rows[0].name,
+        'posts': async function thunk() {
+            return posts_by_user(rows[0].userid);
+        }
+    }
+    return user;
+}
+
 const QueryRootType = new GraphQLObjectType({
     name: 'AppSchema',
     description: 'GraphQL Test Query.',
@@ -17,14 +59,22 @@ const QueryRootType = new GraphQLObjectType({
                 id: { type: GraphQLInt },
             },
             resolve: async (source,params) => {
-                
+
                 const [rows,fields] = await dbconn.promise().query(`SELECT * FROM users WHERE userid='${params.id}'`);
-                return { 
+
+                const post_query = `SELECT * FROM posts WHERE userid=${rows[0].userid}`;
+                const [post_rows,post_fields] = await dbconn.promise().query(post_query);
+
+                var user = {
                     'id': rows[0].userid,
                     'name': rows[0].name,
                     'email': rows[0].name,
+                    'posts': async function thunk() {
+                                return posts_by_user(rows[0].userid);
+                             }
                 };
 
+                return user;
             }
         },
 
@@ -35,7 +85,6 @@ const QueryRootType = new GraphQLObjectType({
                 postid: { type: GraphQLInt }
             },
             resolve: async (source,params) => {
-
                 const post_query = `SELECT * FROM posts WHERE postid='${params.postid}'`;
                 const [post_rows,post_fields] = await dbconn.promise().query(post_query);
 
@@ -60,8 +109,13 @@ const QueryRootType = new GraphQLObjectType({
             description: 'Returns list of posts',
             resolve: async (source,params) => {
 
+                console.log('---- source ----');
+                console.log(source);
+                console.log('---- source ----');
+
                 const query = 'SELECT * FROM posts';
                 const [rows,fields] = await dbconn.promise().query(query);
+
 
                 var posts = [];
                 rows.forEach(row => {
@@ -69,10 +123,8 @@ const QueryRootType = new GraphQLObjectType({
                         'id': row.postid,
                         'title': row.title,
                         'body': rows.body,
-                        'author': {
-                            'id': 1,
-                            'name': 'hello',
-                            'email': 'foo'
+                        'author': function thunk() {
+                            return 'hello'; //user_by_id(1);  // FIXME
                         }
                     });
                 });

@@ -7,7 +7,7 @@ const PostType = new GraphQLObjectType({
         id: { type: GraphQLInt },
         title: { type: GraphQLString },
         body: { type: GraphQLString }, 
-        author: { type: require('./UserType') }
+        user: { type: require('./UserType') } /* Author of post */
     })
 });
 

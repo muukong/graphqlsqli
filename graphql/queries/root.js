@@ -17,7 +17,7 @@ async function posts_by_user(userid) {
             'id': row.postid,
             'title': row.title,
             'body': row.body,
-            'author': async function thunk() {
+            'user': async function thunk() {
                 return user_by_id(row.userid);
             }
         });
@@ -95,7 +95,7 @@ const QueryRootType = new GraphQLObjectType({
                     'id': post_rows[0].postid,
                     'title': post_rows[0].title,
                     'body': post_rows[0].body,
-                    'author': {
+                    'user': {
                         'id': user_rows[0].userid,
                         'name': user_rows[0].name,
                         'email': user_rows[0].email
@@ -123,7 +123,7 @@ const QueryRootType = new GraphQLObjectType({
                         'id': row.postid,
                         'title': row.title,
                         'body': rows.body,
-                        'author': function thunk() {
+                        'user': function thunk() {
                             return 'hello'; //user_by_id(1);  // FIXME
                         }
                     });

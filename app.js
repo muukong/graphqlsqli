@@ -12,7 +12,9 @@ console.log('DB: ' + process.env.MYSQL_DATABASE);
 
 var dbconn = require('./mysql');
 
-/* MySQL */
+/* Initialize MySQL database */
+const initdb = require('./initdb/initdb');
+
 
 /*
 var dbconn = mysql.createConnection({

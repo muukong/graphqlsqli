@@ -23,7 +23,7 @@ services:
             - graphql-sqli-network
         #command: /home/node/app/scripts/wait-for.sh mysqldb:3306 -t 30 -- node app.js
         #command: /home/node/app/node_modules/.bin/nodemon app.js
-        command: /home/node/app/scripts/wait-for.sh mysqldb:3306 -t 120 -- /home/node/app/node_modules/.bin/nodemon app.js
+        command: /home/node/app/scripts/wait-for.sh mysqldb:3306 -t 120 -- /home/node/app/node_modules/.bin/nodemon --ignore 'initdb/*.json' app.js
     mysqldb:
         image: mysql
         container_name: graphql_sqli_mysql

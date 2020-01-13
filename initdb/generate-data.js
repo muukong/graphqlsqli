@@ -1,7 +1,7 @@
 const fs = require('fs');
 
-const nof_users = 5
-const nof_posts = 10
+const nof_users = 500
+const nof_posts = nof_users * 3
 
 /* Generate user list */
 var users = {

@@ -1,0 +1,42 @@
+
+version: '3'
+
+services:
+    app:
+        image: muukong/graphqlsqli:1.0
+        container_name: graphql_sqli
+        restart: unless-stopped
+        env_file: .env
+        environment:
+            - MYSQL_DATABASE=$MYSQL_DATABASE
+            - MYSQL_USER=$MYSQL_USER
+            - MYSQL_PASSWORD=$MYSQL_PASSWORD
+        ports:
+            - "8888:8080"
+        volumes:
+            - .:/home/node/app
+            - node_modules:/home/node/app/node_modules
+        networks:
+            - graphql-sqli-network
+        command: /home/node/app/scripts/wait-for.sh mysqldb:3306 -t 120 -- node app.js
+    mysqldb:
+        image: mysql
+        container_name: graphql_sqli_mysql
+        restart: unless-stopped
+        env_file: .env
+        environment:
+            - MYSQL_DATABASE=$MYSQL_DATABASE
+            - MYSQL_USER=$MYSQL_USER
+            - MYSQL_PASSWORD=$MYSQL_PASSWORD
+            - MYSQL_RANDOM_ROOT_PASSWORD=$MYSQL_RANDOM_ROOT_PASSWORD
+        networks:
+            - graphql-sqli-network
+        
+
+networks:
+    graphql-sqli-network:
+        driver: bridge
+
+volumes:
+    node_modules:
+
